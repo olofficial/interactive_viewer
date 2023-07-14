@@ -1,14 +1,17 @@
 import obplib as obp
+import jdc #utility package for this guide
+
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import matplotlib.style as mplstyle
-mplstyle.use(['dark_background', 'fast'])
-plt.rcParams['figure.dpi'] = 600
+mplstyle.use(['fast'])
+plt.rcParams['figure.dpi'] = 400
 from matplotlib.collections import LineCollection
 
 def plotty(lines, line_number, upper_lim):
+    fig, ax = plt.subplots()
     x_values = [[copy.copy(lines[i].P1.x), copy.copy(lines[i].P2.x)] for i in range(upper_lim)]
     y_values = [[copy.copy(lines[i].P1.y), copy.copy(lines[i].P2.y)] for i in range(upper_lim)]
     min_lines = max(upper_lim - line_number, 0)
@@ -20,15 +23,16 @@ def plotty(lines, line_number, upper_lim):
     
     spot_sizes = [lines[i].bp.spot_size for i in range(min_lines, upper_lim)]
     
-    line_collection = LineCollection(line_segments, cmap='hot', linewidth=2)
+    line_collection = LineCollection(line_segments, cmap='Wistia_r', linewidth=2)
     line_collection.set_array(np.array(speeds))
     line_collection.set_linestyle('-')
     
     linewidths = np.array(spot_sizes) * 0.01  # Scale linewidths based on spot_size parameter
     
     line_collection.set_linewidth(linewidths)
-    
-    plt.gca().add_collection(line_collection)
+    ax = plt.gca()
+    ax.add_collection(line_collection)
+    ax.set_facecolor('xkcd:black')
     plt.colorbar(line_collection)
 
     last_x_values = x_values[-1]
