@@ -54,7 +54,7 @@ def plotty(lines, upper_lim, line_number, show_control_points=False):
     }
 
     for i, line in enumerate(lines):
-        if upper_lim >= i >= min_lines:
+        if upper_lim >= i > min_lines:
             line_info = line_types[type(line)]
             speed_attr = line_info['speed_attr']
             point_attrs = line_info['point_attrs']
@@ -101,20 +101,17 @@ def plotty(lines, upper_lim, line_number, show_control_points=False):
 
     ax.add_collection(lc)
     ax.set_facecolor('xkcd:black')
+    ax.set_aspect('equal')
     plt.colorbar(lc)
 
-    last_x_values = curves[-1]
-    last_y_values = curves[-1]
-    plt.scatter(last_x_values[-1][0], last_y_values[-1][1], color='w', marker='*', s=segment_spot_sizes[-1], zorder=10)
+    last_point = segments_array[-1]
+    plt.scatter(last_point[1][0], last_point[1][1], color='w', marker='*', s=segment_spot_sizes[-1], zorder=10)
 
     if show_control_points:
         t = mpl.markers.MarkerStyle(marker='*')
         t._transform = t.get_transform().rotate_deg(180)
         plt.scatter(control_points[:, 0], control_points[:, 1], color='w', marker=t, s=segment_spot_sizes[-1] * 0.5, zorder=12)
-
-    plt.autoscale()
     plt.grid(False)
-    plt.axis('equal')
     plt.show()
 
 def interactive_viewer(lines, show_control_points = False):
