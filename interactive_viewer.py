@@ -49,18 +49,18 @@ def plotty(lines, upper_lim, line_number, show_control_points=False):
     line_types = {
         obp.Line: {'speed_attr': 'Speed', 'point_attrs': ['P1', 'P2']},
         obp.Curve: {'speed_attr': 'speed', 'point_attrs': ['P1', 'P2', 'P3', 'P4']},
-        obp.AcceleratingLine: {'speed_attr': ('si', 'sf'), 'point_attrs': ['P1', 'P2']},
+        obp.AcceleratingLine: {'speed_attr': ('si', 'sf'), 'point_attrs': ['p1', 'p2']},
         obp.AcceleratingCurve: {'speed_attr': ('si', 'sf'), 'point_attrs': ['P1', 'P2', 'P3', 'P4']},
     }
 
     for i, line in enumerate(lines):
-        if upper_lim >= i > min_lines:
+        if upper_lim >= i >= min_lines or len(lines) == 1:
             line_info = line_types[type(line)]
             speed_attr = line_info['speed_attr']
             point_attrs = line_info['point_attrs']
 
             if isinstance(line_info, obp.Line) or isinstance(line_info, obp.AcceleratingLine):
-                num_segments = 2  # Number of segments for coloring the current line
+                num_segments = 100  # Number of segments for coloring the current line
             else:
                 num_segments = 100
 
