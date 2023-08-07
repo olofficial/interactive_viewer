@@ -4,34 +4,51 @@ import matplotlib.pyplot as plt
 import numpy as np
 import copy
 import matplotlib.colors as mcolors
+import math
 import matplotlib as mpl
 
-mpl.style.use(['fast'])
-plt.rcParams['figure.dpi'] = 400
+mpl.style.use(["fast"])
+plt.rcParams["figure.dpi"] = 400
 
-class TimedPoint():
+
+class TimedPoint:
     """Helper class to store timed points."""
+
     def __init__(self, coords, dwell_time, bp):
         self.coords = coords
         self.dwell_time = dwell_time
         self.bp = bp
 
+
 # Dictionary to define object types and their attributes
 object_types = {
-    obp.Line: {'speed_attr': 'Speed', 'point_attrs': ['P1', 'P2']},
-    obp.Curve: {'speed_attr': 'speed', 'point_attrs': ['P1', 'P2', 'P3', 'P4']},
-    obp.AcceleratingLine: {'speed_attr': ('si', 'sf'), 'point_attrs': ['p1', 'p2']},
-    obp.AcceleratingCurve: {'speed_attr': ('si', 'sf'), 'point_attrs': ['P1', 'P2', 'P3', 'P4']},
+    obp.Line: {"speed_attr": "Speed", "point_attrs": ["P1", "P2"]},
+    obp.Curve: {"speed_attr": "speed", "point_attrs": ["P1", "P2", "P3", "P4"]},
+    obp.AcceleratingLine: {"speed_attr": ("si", "sf"), "point_attrs": ["p1", "p2"]},
+    obp.AcceleratingCurve: {
+        "speed_attr": ("si", "sf"),
+        "point_attrs": ["P1", "P2", "P3", "P4"],
+    },
     obp.TimedPoints: {},
-    TimedPoint: {}
+    TimedPoint: {},
 }
 
+
 def unpack_timedpoints(timedpoints):
-    """Unpack TimedPoints objects into a list of TimedPoint instances."""
+    """Unpack TimedPoints objects into a list of TimedPoint instances.
+
+    Args:
+        timedpoints (obp.TimedPoints): TimedPoints object.
+
+    Returns:
+        list: List of TimedPoint instances.
+    """
     timedpoints_list = []
     dwell_time_const = False  # Flag to determine if dwell time is constant
     bp = timedpoints.bp
-    if timedpoints.dwellTimes[1:] == [0 for _ in range(len(timedpoints.dwellTimes) - 1)]:
+    if timedpoints.dwellTimes[1:] == [
+        0 for _ in range(len(timedpoints.dwellTimes) - 1)
+    ]:
         dwell_time_const = True
         dwell_time = timedpoints.dwellTimes[0]
     for i in range(len(timedpoints.points)):
@@ -41,8 +58,16 @@ def unpack_timedpoints(timedpoints):
         timedpoints_list.append(TimedPoint(coords, dwell_time, bp))
     return timedpoints_list
 
+
 def expand_objects(objects):
-    """Expand objects into a flat list of objects by unpacking TimedPoints."""
+    """Expand objects into a flat list of objects by unpacking TimedPoints.
+
+    Args:
+        objects (list): List of objects.
+
+    Returns:
+        list: Expanded list of objects.
+    """
     new_objects = []
     for obj in objects:
         obj_info = object_types.get(type(obj))
@@ -54,27 +79,71 @@ def expand_objects(objects):
             new_objects.append(obj)
     return new_objects
 
+
 def bezier_curve(control_points, num_points=100):
-    """Generate a Bézier curve given control points."""
+    """Generate a Bézier curve given control points.
+
+    Args:
+        control_points (list): List of control points.
+        num_points (int, optional): Number of points on the curve.
+
+    Returns:
+        np.array: Array of points representing the Bézier curve.
+    """
     t = np.linspace(0, 1, num_points)
     n = len(control_points) - 1
     curve = np.zeros((num_points, 2))
     for i in range(num_points):
         for j in range(n + 1):
-            curve[i] += np.multiply([control_points[j][0], control_points[j][1]], bernstein_polynomial(n, j, t[i]))
+            curve[i] += np.multiply(
+                [control_points[j][0], control_points[j][1]],
+                bernstein_polynomial(n, j, t[i]),
+            )
     return curve
 
+
 def binomial_coefficient(n, k):
-    """Compute the binomial coefficient (n choose k)."""
-    return np.math.factorial(n) / (np.math.factorial(k) * np.math.factorial(n - k))
+    """Compute the binomial coefficient (n choose k).
+
+    Args:
+        n (int): Total number of items.
+        k (int): Number of items to choose.
+
+    Returns:
+        float: Binomial coefficient value.
+    """
+    return math.factorial(n) / (math.factorial(k) * math.factorial(n - k))
+
 
 def bernstein_polynomial(n, k, t):
-    """Compute the Bernstein polynomial for a given n and k."""
-    return binomial_coefficient(n, k) * t**k * (1 - t)**(n - k)
+    """Compute the Bernstein polynomial for a given n and k.
+
+    Args:
+        n (int): Degree of the polynomial.
+        k (int): Index of the Bernstein polynomial.
+        t (float): Parameter value.
+
+    Returns:
+        float: Value of the Bernstein polynomial.
+    """
+    return binomial_coefficient(n, k) * t**k * (1 - t) ** (n - k)
+
 
 def mscatter(x, y, ax=None, m=None, **kw):
-    """Create a scatter plot with custom markers."""
+    """Create a scatter plot with custom markers. Taken from https://github.com/matplotlib/matplotlib/issues/11155#issuecomment-385939618  
+
+    Args:
+        x (array-like): X-coordinates of the data points.
+        y (array-like): Y-coordinates of the data points.
+        ax (matplotlib.axes.Axes, optional): Matplotlib axis.
+        m (list, optional): List of markers for data points.
+        **kw: Additional keyword arguments for scatter.
+
+    Returns:
+        matplotlib.collections.PathCollection: Scatter plot object.
+    """
     import matplotlib.markers as mmarkers
+
     if not ax:
         ax = plt.gca()
     sc = ax.scatter(x, y, **kw)
@@ -90,10 +159,11 @@ def mscatter(x, y, ax=None, m=None, **kw):
         sc.set_paths(paths)
     return sc
 
+
 def plot_lines_and_points(objects, upper_lim, object_number, show_control_points=False):
     """Plot lines and TimedPoints with color and size variation based on attributes.
 
-    Parameters:
+    Args:
         objects (list): List of objects.
         upper_lim (int): Upper limit for the number of objects to plot.
         object_number (int): Number of objects to plot.
@@ -107,23 +177,40 @@ def plot_lines_and_points(objects, upper_lim, object_number, show_control_points
     start_object_idx = max(upper_lim - object_number, 0)
     end_object_idx = min(upper_lim, len(objects))
 
-    dwell_times_available = any(isinstance(obj, TimedPoint) for obj in objects[start_object_idx:end_object_idx])
-    line_speeds_available = any(isinstance(obj, (obp.Line, obp.AcceleratingLine, obp.Curve, obp.AcceleratingCurve)) for obj in objects[start_object_idx:end_object_idx])
+    dwell_times_available = any(
+        isinstance(obj, TimedPoint) for obj in objects[start_object_idx:end_object_idx]
+    )
+    line_speeds_available = any(
+        isinstance(
+            obj, (obp.Line, obp.AcceleratingLine, obp.Curve, obp.AcceleratingCurve)
+        )
+        for obj in objects[start_object_idx:end_object_idx]
+    )
 
     if dwell_times_available:
-        cmap_dwell_times = plt.get_cmap('viridis')  # Colormap for TimedPoints' dwellTimes
+        cmap_dwell_times = plt.get_cmap(
+            "viridis"
+        )  # Colormap for TimedPoints' dwellTimes
         dwell_times_norm = None
-        dwell_times_values = [obj.dwell_time for obj in objects]  # Collect all dwell time values
+        dwell_times_values = [
+            obj.dwell_time for obj in objects
+        ]  # Collect all dwell time values
 
         # Check if there is only one unique value for dwell times
         unique_dwell_times = np.unique(dwell_times_values)
         if len(unique_dwell_times) == 1:
             # If there is only one unique value, manually adjust the normalization
-            dwell_times_norm = mcolors.Normalize(unique_dwell_times[0] * 0.9, unique_dwell_times[0] * 1.1)
+            dwell_times_norm = mcolors.Normalize(
+                unique_dwell_times[0] * 0.9, unique_dwell_times[0] * 1.1
+            )
         else:
-            dwell_times_norm = mcolors.Normalize(np.min(dwell_times_values), np.max(dwell_times_values))
+            dwell_times_norm = mcolors.Normalize(
+                np.min(dwell_times_values), np.max(dwell_times_values)
+            )
     if line_speeds_available:
-        cmap_line_speeds = plt.get_cmap('Wistia')  # Colormap for line speed/acceleration
+        cmap_line_speeds = plt.get_cmap(
+            "Wistia"
+        )  # Colormap for line speed/acceleration
         line_speeds_norm = None
 
     scatter_points_timed = []  # Separate scatter points list for TimedPoints
@@ -149,78 +236,145 @@ def plot_lines_and_points(objects, upper_lim, object_number, show_control_points
             if dwell_times_available:
                 scatter_colors_dwell_times.append(obj.dwell_time)
             if last_object:
-                markers_timed.append('*')
+                markers_timed.append("*")
                 scatter_sizes_timed.append(obj.bp.spot_size * 0.3)
             else:
-                markers_timed.append('o')
+                markers_timed.append("o")
                 scatter_sizes_timed.append(obj.bp.spot_size * 0.01)
-                
-        elif isinstance(obj, (obp.Line, obp.AcceleratingLine, obp.Curve, obp.AcceleratingCurve)):
-            scatter_params = plot_line(ax, obj, cmap_line_speeds, show_control_points=show_control_points)
+
+        elif isinstance(
+            obj, (obp.Line, obp.AcceleratingLine, obp.Curve, obp.AcceleratingCurve)
+        ):
+            scatter_params = plot_line(
+                ax, obj, cmap_line_speeds, show_control_points=show_control_points
+            )
             if last_object:
                 last_point = scatter_params[0]
                 scatter_points_line.append([last_point[1][0], last_point[1][1]])
                 scatter_sizes_line.append(scatter_params[1])
-                markers_line.append('*')
+                markers_line.append("*")
             if len(scatter_params) > 3:
                 for i in range(len(scatter_params[2])):
-                    scatter_points_line.append([scatter_params[2][i][0], scatter_params[2][i][1]])
+                    scatter_points_line.append(
+                        [scatter_params[2][0][i][0], scatter_params[2][0][i][1]]
+                    )
                     scatter_sizes_line.append(scatter_params[1] * 0.3)
                     markers_line.append(scatter_params[2][1])
             scatter_colors_line_speeds.extend(scatter_params[-1])
-            
+
     scatter_points_timed = np.array(scatter_points_timed)
     scatter_points_line = np.array(scatter_points_line)
-    
-    if dwell_times_available:
 
+    if dwell_times_available:
         # Check if there is only one unique value for dwell times
         unique_dwell_times = np.unique(dwell_times_values)
         if len(unique_dwell_times) == 1:
             # If there is only one unique value, manually adjust the normalization
-            dwell_times_norm = mcolors.Normalize(unique_dwell_times[0] * 0.9, unique_dwell_times[0] * 1.1)
+            dwell_times_norm = mcolors.Normalize(
+                unique_dwell_times[0] * 0.9, unique_dwell_times[0] * 1.1
+            )
         else:
-            dwell_times_norm = mcolors.Normalize(np.min(dwell_times_values), np.max(dwell_times_values))
+            dwell_times_norm = mcolors.Normalize(
+                np.min(dwell_times_values), np.max(dwell_times_values)
+            )
 
         last_point_timed = scatter_points_timed[-1]
         # Plot all TimedPoints except the last one with the specified parameters
-        
-        dwell_times_norm = mcolors.Normalize(np.min(scatter_colors_dwell_times), np.max(scatter_colors_dwell_times))
-        dwell_times_cbar = plt.colorbar(plt.cm.ScalarMappable(norm=dwell_times_norm, cmap=cmap_dwell_times), ax=ax)
-        dwell_times_cbar.set_label('Dwell Time', rotation=270, labelpad=20)
-        plt.scatter(scatter_points_timed[:-1, 0], scatter_points_timed[:-1, 1], c=scatter_colors_dwell_times[:-1], s=scatter_sizes_timed[:-1], marker = 'o', zorder=100)
-        plt.scatter(last_point_timed[0], last_point_timed[1], c='white', marker='*', s=scatter_sizes_timed[-1], zorder=101)
+
+        dwell_times_norm = mcolors.Normalize(
+            np.min(scatter_colors_dwell_times), np.max(scatter_colors_dwell_times)
+        )
+        dwell_times_cbar = plt.colorbar(
+            plt.cm.ScalarMappable(norm=dwell_times_norm, cmap=cmap_dwell_times), ax=ax
+        )
+        dwell_times_cbar.set_label("Dwell Time", rotation=270, labelpad=20)
+        plt.scatter(
+            scatter_points_timed[:-1, 0],
+            scatter_points_timed[:-1, 1],
+            c=scatter_colors_dwell_times[:-1],
+            s=scatter_sizes_timed[:-1],
+            marker="o",
+            zorder=100,
+        )
+        plt.scatter(
+            last_point_timed[0],
+            last_point_timed[1],
+            c="white",
+            marker="*",
+            s=scatter_sizes_timed[-1],
+            zorder=101,
+        )
     if line_speeds_available:
         last_point_line = scatter_points_line[-1]
-        line_speeds_norm = mcolors.Normalize(np.min(scatter_colors_line_speeds), np.max(scatter_colors_line_speeds))
-        line_speeds_cbar = plt.colorbar(plt.cm.ScalarMappable(norm=line_speeds_norm, cmap=cmap_line_speeds), ax=ax, label='Speed', location = 'left', ticklocation = 'left')
+        line_speeds_norm = mcolors.Normalize(
+            np.min(scatter_colors_line_speeds), np.max(scatter_colors_line_speeds)
+        )
+        line_speeds_cbar = plt.colorbar(
+            plt.cm.ScalarMappable(norm=line_speeds_norm, cmap=cmap_line_speeds),
+            ax=ax,
+            label="Speed",
+            location="left",
+            ticklocation="left",
+        )
         # Plot all line objects except the last one with the specified parameters
         if len(scatter_points_line) > 1:
-            plt.scatter(scatter_points_line[:-1, 0], scatter_points_line[:-1, 1], c=scatter_colors_line_speeds[:-1], s=scatter_sizes_line[:-1], marker='*', zorder=100)
+            plt.scatter(
+                scatter_points_line[:-1, 0],
+                scatter_points_line[:-1, 1],
+                c="white",
+                s=scatter_sizes_line[:-1],
+                marker='*',
+                zorder=100,
+            )
         # Plot the last line object with different parameters (white star)
-        mscatter(last_point_line[0], last_point_line[1], c='white', marker=markers_line[-1], s=scatter_sizes_line[-1], zorder=101)
+        mscatter(
+            last_point_line[0],
+            last_point_line[1],
+            c="white",
+            marker=markers_line[-1],
+            s=scatter_sizes_line[-1],
+            zorder=101,
+        )
 
-    plt.xticks(rotation=45, ha='right')
-    plt.yticks(rotation=45, ha='right')
-    ax.set_facecolor('xkcd:black')
-    ax.set_aspect('equal')
+    plt.xticks(rotation=45, ha="right")
+    plt.yticks(rotation=45, ha="right")
+    ax.set_facecolor("xkcd:black")
+    ax.set_aspect("equal")
 
     plt.grid(False)
     plt.show()
 
+
 def plot_line(ax, line, cmap, show_control_points=False):
-    """Plot a line with color and size variation based on attributes."""
+    """Plot a line with color and size variation based on speed and spot size.
+
+    Args:
+        ax (matplotlib.axes.Axes): Matplotlib axis to plot on.
+        line: Line object to plot.
+        cmap (matplotlib.colors.Colormap): Colormap for color variation.
+        show_control_points (bool, optional): Whether to display control points.
+
+    Returns:
+        list: List containing plot parameters.
+    """
     num_segments = 100
 
     obj_info = object_types.get(type(line))
     if obj_info is None:
         return
 
-    speed_attr = obj_info['speed_attr']
-    point_attrs = obj_info['point_attrs']
+    speed_attr = obj_info["speed_attr"]
+    point_attrs = obj_info["point_attrs"]
 
-    control_points = np.array([[copy.copy(getattr(line, point_attr).x), copy.copy(getattr(line, point_attr).y)]
-                               for point_attr in point_attrs])
+    control_points = np.array(
+        [
+            [
+                copy.copy(getattr(line, point_attr).x),
+                copy.copy(getattr(line, point_attr).y),
+            ]
+            for point_attr in point_attrs
+        ]
+    )
 
     curve = bezier_curve(control_points, num_segments)
 
@@ -241,20 +395,45 @@ def plot_line(ax, line, cmap, show_control_points=False):
     lc.set_linewidth(spot_sizes * 0.01)
     ax.add_collection(lc)
     if show_control_points:
-        t = mpl.markers.MarkerStyle(marker='*')
+        t = mpl.markers.MarkerStyle(marker="*")
         t._transform = t.get_transform().rotate_deg(180)
-        control_points = np.array([[copy.copy(getattr(line, point_attr).x), copy.copy(getattr(line, point_attr).y)]
-                                   for point_attr in point_attrs])
+        control_points = np.array(
+            [
+                [
+                    copy.copy(getattr(line, point_attr).x),
+                    copy.copy(getattr(line, point_attr).y),
+                ]
+                for point_attr in point_attrs
+            ]
+        )
         control_params = [control_points, t]
     if show_control_points:
         return [curve_array[-1], spot_sizes[-1], control_params, speeds]
     else:
-        return [curve_array[-1], spot_sizes[-1], speeds] 
+        return [curve_array[-1], spot_sizes[-1], speeds]
+
 
 def notebook_viewer(objects, show_control_points=False):
-    """Create an interactive viewer for lines and curves."""
+    """Create an interactive viewer for lines and curves.
+
+    Args:
+        objects (list): List of objects to display.
+        show_control_points (bool, optional): Whether to show control points.
+
+    Returns:
+        None
+    """
     objects = expand_objects(objects)
-    object_number = widgets.IntText(value=len(objects), description='Max Objects:', min=1, max=len(objects))
-    widgets.interact(plot_lines_and_points, objects=widgets.fixed(objects), upper_lim=(1, len(objects), 1), description = 'Index of objects',
-                     object_number=object_number, show_control_points=widgets.fixed(show_control_points),
-                     layout=widgets.Layout(width='50%'), continuous_update=False)
+    object_number = widgets.IntText(
+        value=len(objects), description="Max Objects:", min=1, max=len(objects)
+    )
+    widgets.interact(
+        plot_lines_and_points,
+        objects=widgets.fixed(objects),
+        upper_lim=(1, len(objects), 1),
+        description="Index of objects",
+        object_number=object_number,
+        show_control_points=widgets.fixed(show_control_points),
+        layout=widgets.Layout(width="50%"),
+        continuous_update=False,
+    )
